@@ -1,0 +1,12 @@
+paths:
+  original_data: '{base_path}/raw/SaberTyT_Genericas_20221.TXT'
+  
+  all_features_file: '{base_path}/processed/features/allFeatures.txt'
+  
+  encoder_file: '{base_path}/processed/dataPreprocessingService/encoder01.pkl'
+  normalizer_file: '{base_path}/processed/dataPreprocessingService/normalizer01.pkl'
+  
+  final_features_file: '{base_path}/processed/features/final_features_selected01.txt'
+  processed_final_data: '{base_path}/processed/dataProcessed/SaberTyT_Genericas_20221_proccesed01.csv'
+
+
