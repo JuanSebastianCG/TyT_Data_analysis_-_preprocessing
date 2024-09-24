@@ -10,6 +10,6 @@ unidecode # libreria para quitar acentos
 joblib # libreria para guardar modelos
 pyyaml # libreria para guardar configuraciones
 python-dotenv
-sklearn
+scikit-learn==1.5.1 
 
 # pip install -r requirements.txt

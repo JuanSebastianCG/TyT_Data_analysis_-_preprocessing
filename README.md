@@ -64,7 +64,7 @@ pip install -r requirements.txt
 
 ```bash
 git clone https://github.com/tu_usuario/TyT_carolina.git
-cd TyT_carolina
+cd ./TyT_Data_analysis_preprocessing
 ```
 
 ### 2. **Crear un Entorno Virtual**

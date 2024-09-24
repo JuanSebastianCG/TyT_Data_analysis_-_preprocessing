@@ -1,0 +1,20 @@
+
+iwr -useb get.scoop.sh | iex
+scoop install git-flow
+
+brew install git-flow
+
+# Inicia GitFlow en tu repositorio
+git flow init
+git push -u origin develop
+
+
+    # Crear y cambiar a la rama de característica
+git flow feature start mi-nueva-caracteristica
+    # Después de realizar cambios
+git add .
+git commit -m "Añadido mejora específica en funcionalidad X"
+    # Finalizar y fusionar en develop
+git flow feature finish mi-nueva-caracteristica
+    # Empuja los cambios a origin
+git push origin develop
