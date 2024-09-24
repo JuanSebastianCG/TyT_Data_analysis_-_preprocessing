@@ -1,15 +1,13 @@
 pandas # Para manipulación de datos
 numpy # Para manipulación de datos
 matplotlib # Para gráficos
-pydantic # Para manejar esquemas de datos
-pydantic-settings # Para manejar configuraciones
 imblearn #libreria para balancear datos
 category_encoders # libreria para codificar variables categóricas
 seaborn # libreria para graficos
 unidecode # libreria para quitar acentos
 joblib # libreria para guardar modelos
 pyyaml # libreria para guardar configuraciones
-python-dotenv
-scikit-learn==1.5.1 
+python-dotenv # libreria para manejar variables de ambiente
+scikit-learn==1.5.1 # librerias para machine learning 
 
 # pip install -r requirements.txt
