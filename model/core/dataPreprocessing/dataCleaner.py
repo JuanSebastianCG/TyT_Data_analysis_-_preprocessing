@@ -5,117 +5,184 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from typing import Optional, List
 from .encoders import Encoder
 
-# Clase principal DataCleaner
+# Main DataCleaner class
 class DataCleaner:
     """
-    Clase para manejar la limpieza de datos. Coordina la imputación, estandarización, normalización, 
-    codificación de variables categóricas y detección de outliers.
+    A class to handle data cleaning operations. This includes imputing missing values, standardizing and normalizing
+    numeric data, encoding categorical variables, and detecting outliers.
     """
-    def __init__(self, X: pd.DataFrame, feature_selected: Optional[List[str]] = None):
-        """
-        Inicializa la clase DataCleaner con las características (X).
-        Ofrece la opción de seleccionar características específicas.
-        """
-        self.X = X.copy()
-        self.stored_scaler = None
-        self.stored_normalizer = None
-        self.encoder = Encoder()
 
-    def convert_int_to_float(self) -> None:
-        """Convierte columnas de tipo entero a flotante en el DataFrame."""
-        int_cols = self.X.select_dtypes(include=['int']).columns
-        self.X[int_cols] = self.X[int_cols].astype(float)
+    def __init__(self):
+        self.encoder = Encoder()  # Initialize the encoder class for encoding categorical variables
 
-    def impute_missing_values(self) -> None:
-        """Imputa los valores faltantes en las columnas numéricas utilizando KNNImputer."""
-        numeric_cols = self.X.select_dtypes(include=[np.number]).columns
+    @staticmethod
+    def convert_int_to_float(X: pd.DataFrame) -> pd.DataFrame:
+        """
+        Converts integer columns to float in the DataFrame.
+        
+        Args:
+            X (pd.DataFrame): The input DataFrame.
+        
+        Returns:
+            pd.DataFrame: The DataFrame with integer columns converted to float.
+        """
+        int_cols = X.select_dtypes(include=['int']).columns
+        X[int_cols] = X[int_cols].astype(float)
+        return X
+
+    @staticmethod
+    def impute_missing_values(X: pd.DataFrame) -> pd.DataFrame:
+        """
+        Imputes missing values in numeric columns using KNNImputer.
+        
+        Args:
+            X (pd.DataFrame): The input DataFrame.
+        
+        Returns:
+            pd.DataFrame: The DataFrame with imputed missing values.
+        """
+        numeric_cols = X.select_dtypes(include=[np.number]).columns
         if not numeric_cols.empty:
-            imputed_values = self.imputer.fit_transform(self.X[numeric_cols])
-            self.X[numeric_cols] = imputed_values
+            imputer = KNNImputer()
+            imputed_values = imputer.fit_transform(X[numeric_cols])
+            X[numeric_cols] = imputed_values
+        return X
 
-    def standardize_numeric_data(self, ignore_columns: Optional[List[str]] = None) -> pd.DataFrame:
+    @staticmethod
+    def impute_missing_values_with_median(X: pd.DataFrame) -> pd.DataFrame:
         """
-        Estandariza las columnas numéricas excluyendo las columnas especificadas.
-        Retorna el DataFrame estandarizado y guarda el modelo de estandarización.
+        Imputes missing values in numeric columns with the median of the column.
+        
+        Args:
+            X (pd.DataFrame): The input DataFrame.
+        
+        Returns:
+            pd.DataFrame: The DataFrame with missing values imputed by the median.
+        """
+        numeric_cols = X.select_dtypes(include=[np.number]).columns
+        if not numeric_cols.empty:
+            X[numeric_cols] = X[numeric_cols].fillna(X[numeric_cols].median())
+        return X
+
+    @staticmethod
+    def standardize_numeric_data(X: pd.DataFrame, ignore_columns: Optional[List[str]] = None) -> (pd.DataFrame, StandardScaler):
+        """
+        Standardizes numeric columns by scaling them to have zero mean and unit variance, excluding specified columns.
+        
+        Args:
+            X (pd.DataFrame): The input DataFrame.
+            ignore_columns (Optional[List[str]]): List of columns to ignore from standardization. Default is None.
+        
+        Returns:
+            pd.DataFrame: The standardized DataFrame.
+            StandardScaler: The scaler object used to revert the standardization.
         """
         if ignore_columns is None:
             ignore_columns = []
-        numeric_cols = self.X.select_dtypes(include=[float, int]).columns.difference(ignore_columns)
+        numeric_cols = X.select_dtypes(include=[float, int]).columns.difference(ignore_columns)
         if not numeric_cols.empty:
-            self.stored_scaler = StandardScaler()  # Crear una instancia nueva
-            self.stored_scaler.fit(self.X[numeric_cols])
-            self.X[numeric_cols] = self.stored_scaler.transform(self.X[numeric_cols])
-        return self.X
+            scaler = StandardScaler()
+            X[numeric_cols] = scaler.fit_transform(X[numeric_cols])
+        return X, scaler
 
-    def normalize_numeric_data(self, ignore_columns: Optional[List[str]] = None) -> pd.DataFrame:
+    @staticmethod
+    def normalize_numeric_data(X: pd.DataFrame, ignore_columns: Optional[List[str]] = None) -> (pd.DataFrame, MinMaxScaler):
         """
-        Normaliza las columnas numéricas excluyendo las columnas especificadas.
-        Retorna el DataFrame normalizado y guarda el modelo de normalización.
+        Normalizes numeric columns by scaling them to a range between 0 and 1, excluding specified columns.
+        
+        Args:
+            X (pd.DataFrame): The input DataFrame.
+            ignore_columns (Optional[List[str]]): List of columns to ignore from normalization. Default is None.
+        
+        Returns:
+            pd.DataFrame: The normalized DataFrame.
+            MinMaxScaler: The normalizer object used to revert the normalization.
         """
         if ignore_columns is None:
             ignore_columns = []
-        numeric_cols = self.X.select_dtypes(include=[float, int]).columns.difference(ignore_columns)
+        numeric_cols = X.select_dtypes(include=[float, int]).columns.difference(ignore_columns)
         if not numeric_cols.empty:
-            self.stored_normalizer = MinMaxScaler()  # Crear una instancia nueva
-            self.stored_normalizer.fit(self.X[numeric_cols])
-            self.X[numeric_cols] = self.stored_normalizer.transform(self.X[numeric_cols])
-        return self.X
+            normalizer = MinMaxScaler()
+            X[numeric_cols] = normalizer.fit_transform(X[numeric_cols])
+        return X, normalizer
 
-    def reverse_standardize(self) -> pd.DataFrame:
+    @staticmethod
+    def reverse_standardize(X: pd.DataFrame, scaler: StandardScaler) -> pd.DataFrame:
         """
-        Revierte la estandarización de las columnas numéricas.
+        Reverts the standardization applied to numeric columns.
+        
+        Args:
+            X (pd.DataFrame): The input DataFrame.
+            scaler (StandardScaler): The scaler object used for standardization.
+        
+        Returns:
+            pd.DataFrame: The DataFrame with reverted standardization.
         """
-        if self.stored_scaler:
-            numeric_cols = self.X.select_dtypes(include=[float, int]).columns
-            self.X[numeric_cols] = self.stored_scaler.inverse_transform(self.X[numeric_cols])
-        return self.X
+        numeric_cols = X.select_dtypes(include=[float, int]).columns
+        X[numeric_cols] = scaler.inverse_transform(X[numeric_cols])
+        return X
 
-    def reverse_normalize(self) -> pd.DataFrame:
+    @staticmethod
+    def reverse_normalize(X: pd.DataFrame, normalizer: MinMaxScaler) -> pd.DataFrame:
         """
-        Revierte la normalización de las columnas numéricas.
+        Reverts the normalization applied to numeric columns.
+        
+        Args:
+            X (pd.DataFrame): The input DataFrame.
+            normalizer (MinMaxScaler): The normalizer object used for normalization.
+        
+        Returns:
+            pd.DataFrame: The DataFrame with reverted normalization.
         """
-        if self.stored_normalizer:
-            numeric_cols = self.X.select_dtypes(include=[float, int]).columns
-            self.X[numeric_cols] = self.stored_normalizer.inverse_transform(self.X[numeric_cols])
-        return self.X
+        numeric_cols = X.select_dtypes(include=[float, int]).columns
+        X[numeric_cols] = normalizer.inverse_transform(X[numeric_cols])
+        return X
 
-    def remove_duplicate_rows(self) -> None:
-        """Elimina filas duplicadas en el DataFrame."""
-        self.X.drop_duplicates(inplace=True)
-
-    def remove_null_rows(self) -> None:
-        """Elimina filas que contienen valores nulos en el DataFrame."""
-        self.X.dropna(inplace=True)
-
-    def apply_encoding(self, encoding_method: str = 'label', columns: Optional[List[str]] = None) -> (pd.DataFrame, Encoder):
+    @staticmethod
+    def apply_encoding(X: pd.DataFrame, encoding_method: str = 'label', columns: Optional[List[str]] = None) -> (pd.DataFrame, Encoder):
         """
-        Aplica el método de codificación (One-Hot, Label o Frequency) a las columnas especificadas.
-        Retorna el DataFrame codificado y el encoder utilizado.
+        Applies a specified encoding method (Label, One-Hot, or Frequency) to the specified columns.
+        
+        Args:
+            X (pd.DataFrame): The input DataFrame.
+            encoding_method (str): The encoding method to apply ('label', 'onehot', 'frequency'). Default is 'label'.
+            columns (Optional[List[str]]): The columns to encode. If None, all object-type columns will be encoded.
+        
+        Returns:
+            pd.DataFrame: The encoded DataFrame.
+            Encoder: The encoder object used to revert the encoding.
         """
-
+        encoder = Encoder()
         if columns is None:
-            columns = self.X.select_dtypes(include=['object']).columns.tolist()
+            columns = X.select_dtypes(include=['object']).columns.tolist()
         if encoding_method == 'label':
-            self.X = self.encoder.label_encode(self.X, columns)
+            X = encoder.label_encode(X, columns)
         elif encoding_method == 'onehot':
-            self.X = self.encoder.one_hot_encode(self.X, columns)
+            X = encoder.one_hot_encode(X, columns)
         elif encoding_method == 'frequency':
-            self.X = self.encoder.frequency_encode(self.X, columns)
-        return self.X, self.encoder  
+            X = encoder.frequency_encode(X, columns)
+        return X, encoder
 
-    def reverse_encoding(self, encoding_method: str, columns: Optional[List[str]] = None) -> pd.DataFrame:
+    @staticmethod
+    def reverse_encoding(X: pd.DataFrame, encoding_method: str, encoder: Encoder, columns: Optional[List[str]] = None) -> pd.DataFrame:
         """
-        Decodifica las columnas codificadas de vuelta a sus valores originales.
+        Reverts the encoding applied to the specified columns back to their original categorical values.
+        
+        Args:
+            X (pd.DataFrame): The input DataFrame.
+            encoding_method (str): The encoding method to revert ('label', 'onehot', 'frequency').
+            encoder (Encoder): The encoder object used for encoding.
+            columns (Optional[List[str]]): The columns to decode. If None, it will use the last encoded columns.
+        
+        Returns:
+            pd.DataFrame: The DataFrame with reverted encodings.
         """
         if columns is None:
-            columns = self.encoder.last_features_encoded
+            columns = encoder.last_features_encoded
         if encoding_method == 'label':
-            self.X = self.encoder.reverse_label_encode(self.X, columns)
+            X = encoder.reverse_label_encode(X, columns)
         elif encoding_method == 'onehot':
-            self.X = self.encoder.reverse_one_hot_encode(self.X, columns)
+            X = encoder.reverse_one_hot_encode(X, columns)
         elif encoding_method == 'frequency':
-            self.X = self.encoder.reverse_frequency_encode(self.X, columns)
-        return self.X
-
-
-
+            X = encoder.reverse_frequency_encode(X, columns)
+        return X

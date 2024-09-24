@@ -23,7 +23,6 @@ __pycache__/
 *.sublime-workspace
 
 #inside the folder data
-data/external/*
 #data/processed/*
 #data/raw/*
 
@@ -32,7 +31,4 @@ docs/comands.txt
 docs/structure.txt
 docs/toDoNotes.txt
 
-
-
-model\controller\notebooks\dataPreprocessingControllerTYT.ipynb
 notes.txt
