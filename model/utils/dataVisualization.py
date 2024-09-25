@@ -6,77 +6,94 @@ import io
 
 class DataVisualization:
     def __init__(self):
-        # Empty constructor for this class. If not necessary, it can be removed.
+        """
+        Initialize the DataVisualization class. Currently, no special initialization is needed.
+        """
         pass
 
     @staticmethod
-    def visualize_data(X, kind='boxplot', cols_per_plot=10):
+    def visualize_numeric(numeric_data, kind='boxplot', cols_per_plot=10):
         """
-        Visualizes data from a DataFrame using a specified plot type, dividing the data into multiple plots if there are too many columns.
-        
+        Visualizes numeric columns using either boxplot or histogram.
+
         Parameters:
-        - X (pd.DataFrame): The DataFrame containing the data to visualize.
-        - kind (str): The type of plot. Supported values are 'boxplot', 'histogram', or 'dateplot'.
+        - numeric_data (pd.DataFrame): DataFrame containing numeric columns.
+        - kind (str): The type of plot ('boxplot' or 'histogram').
         - cols_per_plot (int): Maximum number of columns to display per plot.
+
+        This function detects numeric columns in the input DataFrame and divides the columns
+        into chunks of size `cols_per_plot` for easier visualization. Depending on the `kind`
+        parameter, it either generates boxplots or histograms.
         """
-        # Filtrar las columnas numéricas
-        numeric_cols = X.select_dtypes(include=[np.number]).columns
-        date_cols = X.select_dtypes(include=[np.datetime64]).columns  # Filtrar columnas de tipo fecha
+        # Select numeric columns from the DataFrame
+        numeric_cols = numeric_data.select_dtypes(include=[np.number]).columns
+        if numeric_cols.empty:
+            # Early return if no numeric columns are found
+            print("No numeric columns to visualize.")
+            return
 
-        # Visualización para columnas numéricas
-        if kind in ['boxplot', 'histogram'] and not numeric_cols.empty:
-            num_plots = (len(numeric_cols) - 1) // cols_per_plot + 1
+        # Calculate the number of plots required based on the number of numeric columns
+        num_plots = (len(numeric_cols) - 1) // cols_per_plot + 1
+        for i in range(num_plots):
+            # Define the range of columns to be visualized in the current plot
+            start_col = i * cols_per_plot
+            end_col = min((i + 1) * cols_per_plot, len(numeric_cols))
+            subset = numeric_data.iloc[:, start_col:end_col]
 
-            for i in range(num_plots):
-                start_col = i * cols_per_plot
-                end_col = min((i + 1) * cols_per_plot, len(numeric_cols))
-                subset = X.loc[:, numeric_cols[start_col:end_col]]
-
-                if kind == 'boxplot':
-                    subset.plot(kind='box', figsize=(12, 8))
-                    plt.title(f"Boxplot of Features: Chart {i + 1}")
-                    plt.xticks(rotation=90)
-                    plt.show()
-                elif kind == 'histogram':
-                    subset.hist(figsize=(12, 8), bins=15, edgecolor='black', layout=(4, (end_col - start_col + 3) // 4))
-                    plt.suptitle(f"Histograms of Features: Chart {i + 1}", y=1.02)  # Ajustar el título más arriba
-                    plt.subplots_adjust(hspace=0.5)  # Aumenta el espacio entre las gráficas
-                    plt.show()
-
-        # Visualización para columnas de fecha
-        if not date_cols.empty:
-            DataVisualization.visualize_dates(X[date_cols])
+            # Plot either boxplots or histograms based on the `kind` parameter
+            if kind == 'boxplot':
+                subset.plot(kind='box', figsize=(12, 8))  # Generate boxplot
+                plt.title(f"Boxplot of Features: Plot {i + 1}")  # Add title
+                plt.xticks(rotation=90)  # Rotate x-axis labels for better readability
+            elif kind == 'histogram':
+                # Generate histograms with custom layout and binning
+                subset.hist(figsize=(12, 8), bins=15, edgecolor='black', layout=(4, (end_col - start_col + 3) // 4))
+                plt.suptitle(f"Histograms of Features: Plot {i + 1}", y=1.02)  # Add title
+                plt.subplots_adjust(hspace=0.5)  # Adjust space between subplots
+            plt.show()  # Display the plot
 
     @staticmethod
-    def visualize_dates(date_data):
+    def visualize_categorical(cat_data, cols_per_plot=10):
         """
-        Visualizes data of datetime columns using a line plot.
-        
-        Parameters:
-        - date_data (pd.DataFrame): The DataFrame containing datetime columns to visualize.
-        """
-        for col in date_data.columns:
-            plt.figure(figsize=(12, 6))
-            plt.plot(date_data[col], np.arange(len(date_data[col])), marker='o', linestyle='-')
-            plt.title(f"Date Plot for {col}")
-            plt.xlabel('Date')
-            plt.ylabel('Index')
-            plt.xticks(rotation=45)
-            plt.grid(True)
-            plt.show()
-
-    @staticmethod
-    def visualize_correlation(data):
-        """
-        Visualizes a heatmap of the correlation matrix of the DataFrame.
+        Visualizes categorical columns using bar plots.
 
         Parameters:
-        - data (pd.DataFrame): The DataFrame whose correlation is to be visualized.
+        - cat_data (pd.DataFrame or pd.Series): DataFrame or Series containing categorical columns to visualize.
+        - cols_per_plot (int): Maximum number of columns to display per plot.
+
+        This function identifies categorical columns and creates bar plots for the value counts
+        of each category. The columns are divided into chunks for better visualization.
         """
-        plt.figure(figsize=(12, 8))
-        sns.heatmap(data.corr(), annot=True, cmap='coolwarm', fmt='.2f')
-        plt.title("Heatmap of Correlation")
-        plt.show()
+        # Convert Series to DataFrame if needed for consistent handling
+        if isinstance(cat_data, pd.Series):
+            cat_data = cat_data.to_frame()
+
+        # Select only columns of type 'object' (categorical)
+        object_cols = cat_data.select_dtypes(include=['object']).columns
+        if object_cols.empty:
+            # Early return if no categorical columns are found
+            print("No categorical columns to visualize.")
+            return
+
+        # Calculate the number of plots required based on the number of categorical columns
+        num_plots = (len(object_cols) - 1) // cols_per_plot + 1
+        for i in range(num_plots):
+            # Define the range of columns to be visualized in the current plot
+            start_col = i * cols_per_plot
+            end_col = min((i + 1) * cols_per_plot, len(object_cols))
+            subset = cat_data.iloc[:, start_col:end_col]
+
+            # Create subplots for each categorical column in the subset
+            fig, axes = plt.subplots(nrows=1, ncols=len(subset.columns), figsize=(15, 5))
+            if len(subset.columns) == 1:
+                axes = [axes]  # Ensure axes are treated as a list if only one plot is generated
+            for j, col in enumerate(subset.columns):
+                # Create a bar plot for the value counts of each categorical column
+                subset[col].value_counts().plot(kind='bar', ax=axes[j], color='skyblue')
+                axes[j].set_title(f"Bar plot for {col}")  # Set title
+                axes[j].tick_params(axis='x', rotation=90)  # Rotate x-axis labels for better readability
+            plt.tight_layout()  # Adjust the layout to avoid overlap
+            plt.show()  # Display the plot
 
     @staticmethod
     def describe_data(data):
@@ -85,67 +102,41 @@ class DataVisualization:
         count of null values, and frequencies of unique values per column.
 
         Parameters:
-        - data (pd.DataFrame): The DataFrame to describe.
+        - data (pd.DataFrame or pd.Series): The data to describe.
 
         Returns:
-        - str: Detailed description of the DataFrame.
+        - str: Detailed description of the DataFrame or Series.
+
+        This function provides an overview of the DataFrame's structure, including:
+        - Data types of each column
+        - Number of null values per column
+        - Value counts for each column
+        - DataFrame shape (rows, columns)
         """
+        # Convert Series to DataFrame for consistent handling
+        if isinstance(data, pd.Series):
+            data = data.to_frame()
+
+        # Capture DataFrame info (such as column data types) in a string buffer
         output = io.StringIO()
-        data.info(buf=output)  # Retrieve general information about the DataFrame
+        data.info(buf=output)
         info = output.getvalue()
-        
+
+        # Append null value counts per column to the info
         null_counts = data.isnull().sum().to_string()
-        info += "\nNull values per column:\n" + null_counts
-    
-        unique_counts = ""
+        info += "\n\nNull values per column:\n" + null_counts
+
+        # Append data type information to the info
+        dtypes_info = data.dtypes.to_string()
+        info += "\n\nData Types:\n" + dtypes_info
+
+        # Append value counts for each column to the info
+        unique_counts = "\n\nUnique Values per Column:\n"
         for col in data.columns:
-            unique_counts += f"\n{col}:\n{data[col].value_counts().to_string()}\n"
+            unique_counts += f"{col}:\n{data[col].value_counts()}\n\n"
 
-        info += "\n\n"+data.dtypes.to_string()
-        
-        shape_info = "\nDataFrame Shape: " + str(data.shape)
-        info += shape_info
-        
-        return info
+        # Append DataFrame shape information (rows, columns)
+        info += unique_counts
+        info += f"\nDataFrame Shape: {data.shape}"
 
-    @staticmethod
-    def scatter_plot(X, y, x_col, y_col):
-        """
-        Creates a scatter plot between two columns.
-
-        Parameters:
-        - X (pd.DataFrame): DataFrame of the data.
-        - y (pd.Series): Response variable data or a column from the DataFrame.
-        - x_col (str): Name of the X-axis column.
-        - y_col (str): Name of the Y-axis column or 'y' if using the y variable.
-        """
-        plt.scatter(X[x_col], y if y_col == 'y' else X[y_col])
-        plt.title(f"Scatter Plot between {x_col} and {y_col}")
-        plt.xlabel(x_col)
-        plt.ylabel(y_col if y_col != 'y' else y.name)
-        plt.show()
-
-    @staticmethod
-    def pair_plot(data, columns=None):
-        """
-        Visualizes pair plots for the specified columns of the DataFrame.
-
-        Parameters:
-        - data (pd.DataFrame): The DataFrame of the data.
-        - columns (list): List of columns to include in the pair plot. If None, uses all columns.
-        """
-        sns.pairplot(data[columns])
-        plt.show()
-
-    @staticmethod
-    def plot_distribution(data, column):
-        """
-        Visualizes the distribution of a specific column using a KDE plot.
-
-        Parameters:
-        - data (pd.DataFrame): DataFrame containing the data.
-        - column (str): Name of the column whose distribution is to be visualized.
-        """
-        sns.kdeplot(data=data, x=column)
-        plt.title(f"Distribution of {column}")
-        plt.show()
+        return info  # Return the complete detailed information
